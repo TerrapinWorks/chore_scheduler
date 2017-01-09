@@ -1,8 +1,8 @@
 """ --- Imports --- """
-# For making API calls
-import httplib2
 # For saving candidate info
 import json
+# In case we need to exit on an error
+from sys import exit
 # User written module for Google API Calls
 import google_api_functions as api
 
@@ -32,28 +32,23 @@ def update_candidates():
 
   if not values:
     print('No data found in the spreadsheet.')
-  else:
-    # Add all candidates information to candidates.json
-    candidates = []
-    for row in values:
-      # Stop when there are no more names in the spreadsheet
-      if row[0] != '':
-        print("Adding %s" % row[0])
-        try:
-          candidates.append( \
-		{"name" : row[0],
-		"email" : row[1],
-		"mon" : row[2],
-		"tues" : row[3],
-		"wed" : row[4],
-		"thurs" : row[5],
-		"fri" : row[6]})
-        except:
-          print("Error adding %s. Make sure their information"
-	  	"is complete" % row[0])
-    # Store candidate information
-    with open('../bin/candidates.json', 'w') as candidatesJSON:
-      json.dump(candidates, candidatesJSON)
+    exit()
+  # Add all candidates information to candidates.json
+  candidates = []
+  for row in values:
+    # Stop when there are no more names in the spreadsheet
+    if row[0] != '':
+      print("Adding %s" % row[0])
+      candidate = {"name" : row[0], "email" : row[1]}
+      # Get start times
+      weekdays = ["mon", "tues", "wed", "thurs", "fri"]
+      for day_num in range(0, len(weekdays)):
+        candidate[weekdays[day_num]] = \
+		row[day_num + 2] if len(row) > (day_num + 2) else None
+    candidates.append(candidate)
+  # Store candidate information
+  with open('../bin/candidates.json', 'w') as candidatesJSON:
+    json.dump(candidates, candidatesJSON)
 
 if __name__ == '__main__':
   update_candidates()
