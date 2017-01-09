@@ -10,7 +10,7 @@ import google_api_functions as api
 """ --- Get ID for MIC Chore Candidates spreadsheet --- """
 # ID for the sheet is stored in a text file for security
 def get_sheetID():
-  with open('./sheetID.txt', 'r') as f:
+  with open('../bin/sheetID.txt', 'r') as f:
     lines = f.read().splitlines()
     # ID stored on the first line of the file
     return lines[0]
@@ -52,7 +52,7 @@ def update_candidates():
           print("Error adding %s. Make sure their information"
 	  	"is complete" % row[0])
     # Store candidate information
-    with open('candidates.json', 'w') as candidatesJSON:
+    with open('../bin/candidates.json', 'w') as candidatesJSON:
       json.dump(candidates, candidatesJSON)
 
 if __name__ == '__main__':
