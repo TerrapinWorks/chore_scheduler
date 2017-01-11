@@ -2,7 +2,9 @@
 # For saving candidate info
 import json
 # In case we need to exit on an error
-from sys import exit
+import sys
+
+sys.path.append('google_api_functions')
 # User written module for Google API Calls
 import google_api_functions as api
 

@@ -2,3 +2,4 @@ bin/
 *.json
 *.txt
 __pycache__
+google_api_functions/
