@@ -47,4 +47,4 @@ def log_message(message):
 	update_result = sheets_service.spreadsheets().values().update(
 				spreadsheetId=sheet_id, range=sheets_range,
 				valueInputOption="RAW", body=body).execute()
-	print("Sending message: %s" message)
+	print("Sending message: %s" % message)
