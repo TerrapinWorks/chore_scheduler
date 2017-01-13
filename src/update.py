@@ -32,7 +32,7 @@ def update_json():
 	sheets_service = api_object.get_sheets_service()
 	# GET CANDIDATE INFORMATION
 	print("Updating Candidate Information...")
-	sheet_range= 'Candidates!A2:G'
+	sheet_range= 'Candidates!A2:H'
 	result = sheets_service.spreadsheets().values().get( 
 			spreadsheetId=sheet_id, range=sheet_range).execute()
 	values = result.get('values', [])
@@ -41,20 +41,16 @@ def update_json():
 	else:
 		candidates = []
 		for row_num, row in enumerate(values):
-			try:
-				if row[0] != '':
-					print("  Candidate: %s" % row[0])
-					candidate = {"name" : row[0], "email" : row[1]}
-					# Get start times
-					weekdays = ["mon", "tues", "wed", "thurs", "fri"]
-					for day_num in range(0, len(weekdays)):
-						candidate[weekdays[day_num]] = \
-									row[day_num + 2] if len(row) > (day_num + 2) else None
-				candidates.append(candidate)
-			except IndexError:
-				print("Index Error: Error adding candidate")
-				api_object.log_message(sheet_id, "INDEX ERROR:"
-							" for candidate on row %d" % row_num)
+			if row[0] != '':
+				print("  Candidate: %s" % row[0])
+				candidate = {"name" : row[0], "email" : row[1]}
+				# Get start times
+				weekdays = ["mon", "tues", "wed", "thurs", "fri"]
+				for day_num in range(0, len(weekdays)):
+					candidate[weekdays[day_num]] = \
+								row[day_num + 2] if len(row) > (day_num + 2) else None
+				candidate["assigned_chores"] = row[7] if len(row) > 7 else None
+			candidates.append(candidate)
 		# Store candidate information
 		try:
 			with open('../bin/candidates.json', 'w') as candidatesJSON:
@@ -65,14 +61,13 @@ def update_json():
 	
 	# GET CHORE INFORMATION
 	print("Updating Chores...")
-	sheet_range = 'Chores!A2:C'
+	sheet_range = 'Chores!A2:E'
 	result = sheets_service.spreadsheets().values().get( 
 			spreadsheetId=sheet_id, range=sheet_range).execute()
 	values = result.get('values', [])
 	if not values:
 		print('No data found in the spreadsheet.')
 		api_object.log_message(sheet_id, "ERROR: No chores in sheet", LOGFILE)
-		sys.exit()
 	# Add chores to chores.json
 	chores = []
 	for row_num, row in enumerate(values):
@@ -82,14 +77,22 @@ def update_json():
 				# Set default completion status if cell is empty
 				completion_frequency = row[1] if ((len(row) > 1) and row[1] != '') \
 																				else DEFAULT_COMPLETION_FREQUENCY
+				# Set fields to None if empty
+				assignees = row[2] if ((len(row) > 2) and row[2] != '') else None
+				assignment_time = row[3] if ((len(row) > 3) and row[3] != '') else None
 				# Set completion status to false if cell is empty
-				completion_status = row[2] if len(row) > 2 else "FALSE"
+				completion_status = row[4] if len(row) > 4 else "FALSE"
 				chore = {
 									"name" : row[0],
 									"completion_frequency" : completion_frequency,
+									"assignees" : assignees,
+									"assignment_time" : assignment_time,
 									"completion_status" : completion_status
 								}
 				chores.append(chore)
+			else:
+				api_object.log_message(sheet_id, "ERROR: Chore does "
+							"not have a name on line %d" % row_num)
 		except IndexError:
 			print("Index Error: Error adding chore")
 			api_object.log_message(sheet_id, "INDEX ERROR:"
@@ -111,7 +114,6 @@ def update_spreadsheet():
 	"""
 	pass
 
-		
 
 if __name__ == '__main__':
 	update_json()

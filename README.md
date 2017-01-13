@@ -12,6 +12,13 @@ emails at the beginning of their shifts telling them of their responsibility. Ch
 When the chore scheduler updates the spreadsheet with assignments, it only alters
 information past the black lines on the spreadsheet.
 
+On the candidates tab 
++ Assigned chores
+On the chores tab 
++ Assignee(s)
++ Assignment Time
++ Completion Status
+
 Errors are automatically logged internally to the Pi and to the Log tab on the spreadsheet.
 
 **Note**: We assume that there will never be two TW employees with the same name 

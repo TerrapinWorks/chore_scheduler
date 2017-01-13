@@ -15,6 +15,7 @@ for candidate in candidates:
   print( 
   	"Name: \t%s\nEmail: \t%s\n"
 	"Mon: \t%s\nTues: \t%s\nWed: \t%s\nThurs: \t%s\nFri: \t%s\n"
+	"Assigned Chores: %s\n"
 	% (candidate["name"], candidate["email"], 
 	candidate["mon"], candidate["tues"], candidate["wed"],
-	candidate["thurs"], candidate["fri"]))
+	candidate["thurs"], candidate["fri"], candidate["assigned_chores"]))
