@@ -9,4 +9,11 @@ list of chores and how frequently they should be completed. The scheduler will a
 assign chores to candidates with the desired frequency for each chore. Candidates will recieve
 emails at the beginning of their shifts telling them of their responsibility. Chores may include sweeping the MIC, checking the extruder repair station and repairing extruders, etc.
 
+When the chore scheduler updates the spreadsheet with assignments, it only alters
+information past the black lines on the spreadsheet.
+
 Errors are automatically logged internally to the Pi and to the Log tab on the spreadsheet.
+
+**Note**: We assume that there will never be two TW employees with the same name 
+(first and last), so the scheduler treats two candidates with the same name as the same
+person.
