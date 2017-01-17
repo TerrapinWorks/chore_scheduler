@@ -1,16 +1,14 @@
-import json
-
+#!/usr/bin/python3
 """ Print information for current candidates
 this script loads the information stored for candidates
 from candidates.json and prints it out in a readable format
 """
 
-with open('../bin/candidates.json') as candidates:
-  JSON_string = candidates.read()
+import json
 
-candidates = json.loads(JSON_string)
+with open('../bin/candidates.json') as candidatesJSON:
+  candidates =  json.loads(candidatesJSON.read())
 
-print()
 for candidate in candidates:
   print( 
   	"Name: \t%s\nEmail: \t%s\n"
