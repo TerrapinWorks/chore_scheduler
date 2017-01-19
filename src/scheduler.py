@@ -70,16 +70,16 @@ class Scheduler:
 			assign_chore = False
 			# Check if enough time has passed since the chore was last assigned
 			# Note that date is stored as "YYYY-MM-DD-HH:MM"
-			try :
+			if chore['assignment_time'] != None:
 				date_list = chore['assignment_time'].split('-')
-				assignment_date = datetime.date(int(date_list[0], int(date_list[1]),
-							int(date_list[2])))
+				assignment_date = datetime.date(int(date_list[0]), int(date_list[1]),
+							int(date_list[2]))
 				current_date = datetime.datetime.now().date()
 				time_diff = current_date - assignment_date
 				time_diff = time_diff.days
 				valid_time = True
-			except:
-				# If an error is detected in the time string, reassign the chore
+			else:
+				# If no time string, reassign
 				valid_time = False
 				assign_chore = True
 			if valid_time:
@@ -102,7 +102,7 @@ class Scheduler:
 	def assign_chore(self, chore):
 		candidate_found = False
 		shuffle(self.candidates)
-		# Find candidate who has not recently completed
+		self.sort_candidates()
 		for candidate in self.candidates:
 			if candidate_found:
 				break
@@ -111,11 +111,21 @@ class Scheduler:
 			if chore['name'] not in recently_completed:
 				# Candidate found. Assign chore
 				candidate_found = True
-				candidate['assigned_chores'] = candidate['assigned_chores'] + \
-							chore['name'] + " " if candidate['assigned_chores'] != None \
-							else chore['name']
-				chore['assignees'] = chore['assignees'] + ", " + candidate['name'] \
-							if chore['assignees'] != None else candidate['name']
+				# Add chore to assigned chores
+				assigned_chores = candidate['assigned_chores']
+				if assigned_chores == None or assigned_chores == "":
+					# Blank list
+					candidate['assigned_chores'] = chore['name']
+				else:
+					candidate['assigned_chores'] += ", " + chore['name']
+				# Add candidate to assignees
+				assignees = chore['assignees']
+				if assignees == None or assignees == "":
+					# Blank list
+					chore['assignees'] = candidate['name']
+				else:
+					chore['assignees'] += ", " + candidate['name']
+				# Add assignment time
 				now = datetime.datetime.now()
 				chore['assignment_time'] = "%d-%d-%d-%d:%d" % (
 							now.year, now.month, now.day, now.hour, now.minute)	
@@ -123,9 +133,29 @@ class Scheduler:
 				sheets.log_message("ASSIGN: %s has been assigned to %s"
 							% (chore['name'], candidate['name']))
 		if not candidate_found:
-			print("TEST")
 			self.reset_recent(chore)
 			self.assign_chore(chore)
+
+	def sort_candidates(self):
+		""" Sort candidates in order of who has most chores currently assigned
+		"""
+		sorted_candidates = []
+		for candidate in self.candidates:
+			candidate_num = len(candidate['assigned_chores'].split(', ')) if \
+						candidate['assigned_chores'] != None else 0
+			if len(sorted_candidates) == 0:
+				sorted_candidates.append(candidate)
+				continue
+			for index, sorted_candidate in enumerate(sorted_candidates):
+				sorted_num = len(sorted_candidate['assigned_chores'].split(', ')) if \
+							sorted_candidate['assigned_chores'] != None else 0
+				if index == (len(sorted_candidates) - 1):
+					sorted_candidates.append(candidate)
+					break
+				if candidate_num < sorted_num:
+					sorted_candidates.insert(index, candidate)
+					break
+		self.candidates = sorted_candidates
 	
 	def reset_recent(self, chore):
 		""" Remove the chore from everyone's Recently Completed

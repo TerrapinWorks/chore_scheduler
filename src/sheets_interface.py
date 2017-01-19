@@ -59,7 +59,7 @@ def get_data(data_type='candidates', save=True):
 	Blank sheets count as a successful get_data()
 	Returns true on success
 	"""
-	log_message('GET: downloading DATA = ' + data_type + ' to the Pi')
+	data_upper = data_type.upper()
 	# Set range/files to use depending on whether function is getting
 	# candidates or chores data
 	sheet_range = CANDIDATES_RANGE if data_type == 'candidates' else CHORES_RANGE
@@ -71,8 +71,8 @@ def get_data(data_type='candidates', save=True):
 	if not values:
 		# No data on the sheet
 		# Clear candidates.json and count as success
-		log_message("NOTE in get_data() for DATA = "
-					+ data_type + ": No data on sheet")
+		log_message("NOTE in get_data() for " + data_upper
+					+ ": No data on sheet")
 		# Save backup
 		system("cp " + data_file + " " + backup_file)
 		if save:
@@ -83,7 +83,7 @@ def get_data(data_type='candidates', save=True):
 		# Spreadsheet contains data. 
 		# Make sure that the requested data is one of the two allowed types
 		if not (data_type == 'candidates' or data_type == 'chores'):
-			log_message("ERROR in get_data(): DATA = " + data
+			log_message("ERROR in get_data(): " + data_upper
 						+ " is invalid data type")
 			return False
 		data_dict = []
@@ -111,8 +111,8 @@ def get_data(data_type='candidates', save=True):
 									completion_frequency == 'Weekly' or
 									completion_frequency == 'Biweekly' or
 									completion_frequency == 'Monthly'):
-							log_message("NOTE in get_gata(): DATA = " + data_type +
-										": Invalid Completion Frequency on row %d. Setting] "
+							log_message("NOTE in get_gata() for " + data_upper
+										+	": Invalid Completion Frequency on row %d. Setting] "
 										"to default of %s" %(row_num + 2, DEFAULT_COMPLETION_FREQUENCY))
 							completion_frequency = DEFAULT_COMPLETION_FREQUENCY	
 						# Set fields to None if empty
@@ -129,10 +129,10 @@ def get_data(data_type='candidates', save=True):
 										}
 						data_dict.append(chore)
 				else:
-					log_message("ERROR in get_data(): "	+ data_type +
+					log_message("ERROR in get_data(): "	+ data_upper +
 					" does not have a name on line %d" % (row_num + 2))
 			except IndexError:
-				log_message("INDEX ERROR in get_data(): DATA = " + data_type +
+				log_message("INDEX ERROR in get_data() for " + data_upper +
 				" on row %d" % (row_num + 2))
 		# Save backup
 		system("cp " + data_file + " " + backup_file)
@@ -142,7 +142,7 @@ def get_data(data_type='candidates', save=True):
 				with open(data_file, 'w') as dataJSON:
 					json.dump(data_dict, dataJSON)
 			except:
-				log_message(sheet_id, "ERROR in get_data() for DATA = " + data 
+				log_message(sheet_id, "ERROR in get_data() for " + data_upper
 							+ ": Error saving Candidate info candidates.json.")
 				return False
 		return True
@@ -167,28 +167,25 @@ def set_data(data_type='candidates'):
 	and replaces with current contents of candidates.json
 	Returns true on success
 	"""
-	log_message('SET BEGIN: Backup ' + data_type + ' and upload from the Pi')
-	log_message('BACKUP BEGIN: Backing up data to the PI')
+	data_upper = data_type.upper()
 	# Set range/files to use depending on whether function is getting
 	# candidates or chores data
 	sheet_range = CANDIDATES_RANGE if data_type == 'candidates' else CHORES_RANGE
 	data_file = CANDIDATES_FILE if data_type == 'candidates' else CHORES_FILE
 	# Save backup of what is currently on the sheet
 	get_data(data_type=data_type, save=False)
-	log_message('BACKUP END')
 	# Read candidate information
 	try:
 		with open(data_file, 'r') as dataJSON:
 			data = json.loads(dataJSON.read())
 	except:
-		log_message("ERROR in set_data for DATA  = " + data_type +
+		log_message("ERROR in set_data for " + data_upper +
 		": data file is empty: " + data_file)
 		return False
 		# Clear current sheet contents
 	api_object.clear_sheet_range(sheet_id, sheet_range)
 	# Sheet contents with JSON contents
 	uploaded = json_to_sheet(data_type, data_file)
-	log_message('SET END')
 	return uploaded
 
 def json_to_sheet(data_type, json_file):
@@ -196,6 +193,7 @@ def json_to_sheet(data_type, json_file):
 	We assume that this is run after clear_sheet_range() so the sheet
 	will be empty
 	"""
+	data_upper = data_type.upper()
 	# Set range based on data being uploaded
 	sheet_range = CANDIDATES_RANGE if data_type == 'candidates' else CHORES_RANGE
 	# Load data from JSON into dictionary
@@ -203,7 +201,7 @@ def json_to_sheet(data_type, json_file):
 		data_dict = json.loads(dataJSON.read())
 	# Make sure one of the two allowed types of data is being uploaded
 	if data_type != 'candidates' and data_type != 'chores':
-		log_message("ERROR in json_to_sheet(): DATA = " + data + 
+		log_message("ERROR in json_to_sheet() for " + data_upper + 
 		" is invalid data type")
 		return False
 	# Upload to the sheet
