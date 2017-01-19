@@ -40,6 +40,22 @@ class Scheduler:
 		sheets.log_message("UPDATING SCHEDULER. CHORE STATUSES WILL NOT CHANGE.")
 		sheets.update_json()
 
+	def load_data(self):
+		# Load the candidates from candidates.json
+		try: 
+			with open(CANDIDATES_FILE, 'r') as dataJSON:
+				self.candidates = json.loads(dataJSON.read())
+		except:
+			sheets.log_message('NOTE in assign_chores(): '
+						' candidates.json appears to be empty')
+		# Load chores from chores.json
+		try:
+			with open(CHORES_FILE, 'r') as dataJSON:
+				self.chores = json.loads(dataJSON.read())
+		except:
+			sheets.log_message('NOTE in assign_chores(): '
+						' chores.json appears to be empty.')
+
 	def schedule_chores(self):
 		""" Randomly assign chores to the candidates. 
 		This takes into consideration who has been assigned to
@@ -49,24 +65,7 @@ class Scheduler:
 		Candidates tab. When everyone has recently completed a chore,
 		that chore is removed from everyone's recently completed.
 		"""
-		# Load the candidates from candidates.json
-		try: 
-			with open(CANDIDATES_FILE, 'r') as dataJSON:
-				candidates = json.loads(dataJSON.read())
-				self.candidates = shuffle(candidates)
-		except:
-			sheets.log_message('NOTE in assign_chores(): '
-						' candidates.json appears to be empty')
-			return True
-		# Load chores from chores.json
-		try:
-			with open(CHORES_FILE, 'r') as dataJSON:
-				self.chores = json.loads(dataJSON.read())
-		except:
-			sheets.log_message('NOTE in assign_chores(): '
-						' chores.json appears to be empty.'
-			return True
-		# Data has been successfully loaded. Assign chores.
+		self.load_data()
 		for chore in self.chores:
 			assign_chore = False
 			# Check if enough time has passed since the chore was last assigned
@@ -74,7 +73,7 @@ class Scheduler:
 			try :
 				date_list = chore['assignment_time'].split('-')
 				assignment_date = datetime.date(int(date_list[0], int(date_list[1]),
-							int(date_list[2]))
+							int(date_list[2])))
 				current_date = datetime.datetime.now().date()
 				time_diff = current_date - assignment_date
 				time_diff = time_diff.days
@@ -96,21 +95,52 @@ class Scheduler:
 					chore['completion_frequency'] = sheets.DEFAULT_COMPLETION_FREQUENCY
 					assign_chore = True
 			if assign_chore:
-				assign_chore(chore)
+				self.assign_chore(chore)
+				# Save updated information
 				self.save_data()
-				return True
 
 	def assign_chore(self, chore):
-			candidate_found = False
-			# Find candidate who has not recently completed
-			for candidate in self.candidates:
-				recently_completed = candidate['recently_completed'].split(' ')
-				if recently_completed.find(chore['name']) < 0:
-					# Candidate found. Assign chore
-					candidate_found = True
-					candidate['assigned_chores'] += chore['name'] + " "
-					chore['assignees'] += candidate['name'] + " "
-					now = datetime.datetime.now()
-					chore['assignment_time'] = "%d-%d-%d-%d:%d" % (
-								now.year, now.month, now.day, now.hour, now.minute)	
-					chore['completion_status'] = 'FALSE'
+		candidate_found = False
+		shuffle(self.candidates)
+		# Find candidate who has not recently completed
+		for candidate in self.candidates:
+			if candidate_found:
+				break
+			recently_completed = candidate['recently_completed'].split(', ') if \
+						candidate['recently_completed'] != None else []
+			if chore['name'] not in recently_completed:
+				# Candidate found. Assign chore
+				candidate_found = True
+				candidate['assigned_chores'] = candidate['assigned_chores'] + \
+							chore['name'] + " " if candidate['assigned_chores'] != None \
+							else chore['name']
+				chore['assignees'] = chore['assignees'] + ", " + candidate['name'] \
+							if chore['assignees'] != None else candidate['name']
+				now = datetime.datetime.now()
+				chore['assignment_time'] = "%d-%d-%d-%d:%d" % (
+							now.year, now.month, now.day, now.hour, now.minute)	
+				chore['completion_status'] = 'FALSE'
+				sheets.log_message("ASSIGN: %s has been assigned to %s"
+							% (chore['name'], candidate['name']))
+		if not candidate_found:
+			print("TEST")
+			self.reset_recent(chore)
+			self.assign_chore(chore)
+	
+	def reset_recent(self, chore):
+		""" Remove the chore from everyone's Recently Completed
+		"""
+		for candidate in self.candidates:
+			current_recent = [item.strip() for item in 
+						candidate['recently_completed'].split(' ')]
+			current_recent.remove(chore['name'])
+
+	def save_data(self):
+		""" Save information from the scheduler to the JSON files
+		"""
+		# Save candidate info
+		with open(CANDIDATES_FILE, 'w') as candidatesJSON:
+			json.dump(self.candidates, candidatesJSON)
+		# Save chore info
+		with open(CHORES_FILE, 'w') as choresJSON:
+			json.dump(self.chores, choresJSON)

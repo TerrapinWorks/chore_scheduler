@@ -112,8 +112,8 @@ def get_data(data_type='candidates', save=True):
 									completion_frequency == 'Biweekly' or
 									completion_frequency == 'Monthly'):
 							log_message("NOTE in get_gata(): DATA = " + data_type +
-										": Invalid Completion Frequency on row %d. Setting"
-										"to default of %s" %(row_num, DEFAULT_COMPLETION_FREQUENCY))
+										": Invalid Completion Frequency on row %d. Setting] "
+										"to default of %s" %(row_num + 2, DEFAULT_COMPLETION_FREQUENCY))
 							completion_frequency = DEFAULT_COMPLETION_FREQUENCY	
 						# Set fields to None if empty
 						assignees = row[2] if ((len(row) > 2) and row[2] != '') else None
