@@ -60,6 +60,11 @@ def get_data(data_type='candidates', save=True):
 	Returns true on success
 	"""
 	data_upper = data_type.upper()
+	# Make sure that the requested data is one of the two allowed types
+	if data_type != 'candidates' and data_type != 'chores':
+		log_message("ERROR in get_data(): %s is invalid data type" 
+					% data_upper)
+		return False
 	# Set range/files to use depending on whether function is getting
 	# candidates or chores data
 	sheet_range = CANDIDATES_RANGE if data_type == 'candidates' else CHORES_RANGE
@@ -81,56 +86,62 @@ def get_data(data_type='candidates', save=True):
 		return True 
 	else:
 		# Spreadsheet contains data. 
-		# Make sure that the requested data is one of the two allowed types
-		if not (data_type == 'candidates' or data_type == 'chores'):
-			log_message("ERROR in get_data(): " + data_upper
-						+ " is invalid data type")
-			return False
 		data_dict = []
 		for row_num, row in enumerate(values):
 			try:
-				if row[0] != '':
-					if data_type == 'candidates':
-						email = row[1] if len(row) > 1 else None
-						candidate = {"name" : row[0], "email" : email}
-						# Get start times
-						weekdays = ["mon", "tues", "wed", "thurs", "fri"]
-						for day_num in range(0, len(weekdays)):
-							candidate[weekdays[day_num]] = \
-										row[day_num + 2] if len(row) > (day_num + 2) else None
-						candidate["assigned_chores"] = row[7] if len(row) > 7 else None
-						candidate["recently_completed"] = row[8] if len(row) > 8 else None
-						data_dict.append(candidate)
-					elif data_type == 'chores':
-						# Set default completion status if cell is empty
-						completion_frequency = row[1] if ((len(row) > 1) and row[1] != '') \
-																						else DEFAULT_COMPLETION_FREQUENCY
-						# Completion frequency can only be:
-						# Daily, Weekly, Biweekly, or Monthly
-						if not (completion_frequency == 'Daily' or
-									completion_frequency == 'Weekly' or
-									completion_frequency == 'Biweekly' or
-									completion_frequency == 'Monthly'):
-							log_message("NOTE in get_gata() for " + data_upper
-										+	": Invalid Completion Frequency on row %d. Setting] "
-										"to default of %s" %(row_num + 2, DEFAULT_COMPLETION_FREQUENCY))
-							completion_frequency = DEFAULT_COMPLETION_FREQUENCY	
-						# Set fields to None if empty
-						assignees = row[2] if ((len(row) > 2) and row[2] != '') else None
-						assignment_time = row[3] if ((len(row) > 3) and row[3] != '') else None
-						# Set completion status to false if cell is empty
-						completion_status = row[4] if len(row) > 4 else "FALSE"
-						chore = {
-											"name" : row[0],
-											"completion_frequency" : completion_frequency,
-											"assignees" : assignees,
-											"assignment_time" : assignment_time,
-											"completion_status" : completion_status
-										}
-						data_dict.append(chore)
-				else:
-					log_message("ERROR in get_data(): "	+ data_upper +
-					" does not have a name on line %d" % (row_num + 2))
+				if row[0] == '':
+					# Nameless row is skipped
+					log_message("ERROR in get_data(): %s does not have a name on line %d"
+								% (data_upper, row_num + 2))
+					continue
+				length = len(row)
+				name = row[0]
+				if data_type == 'candidates':
+					# Ignore entries in the sheet past the useful columns
+					length = length if length < 10 else 9
+					# Tuples = (email, assigned_chores, recently_completed)
+					email = row[1] if length > 1 else None
+					assigned_chores = row[7] if length > 7 else None
+					recently_completed = row[8] if length > 8 else None
+					candidate = {
+								"name": name,
+								"email": email,
+								"assigned_chores": assigned_chores,
+								"recently_completed": recently_completed
+								}
+					# Get start times
+					weekdays = ["mon", "tues", "wed", "thurs", "fri"]
+					for day_num, day in enumerate(weekdays):
+						candidate[day] = \
+									row[day_num + 2] if length > (day_num + 2) else None
+					data_dict.append(candidate)
+				elif data_type == 'chores':
+					# Ignore entries in the sheet past the useful columns
+					length = length if length < 6 else 5
+					# Set default completion status if cell is empty
+					completion_frequency = row[1] if ((length > 1) and row[1] != '') \
+																					else DEFAULT_COMPLETION_FREQUENCY
+					# Completion frequency can only be:
+					# Daily, Weekly, Biweekly, or Monthly
+					if not (completion_frequency == 'Daily' or
+								completion_frequency == 'Weekly' or
+								completion_frequency == 'Biweekly' or
+								completion_frequency == 'Monthly'):
+						log_message("NOTE in get_gata() for %s: Invalid Completion Frequency on row %d. "
+									"Setting to default of %s" %(data_upper, row_num + 2, DEFAULT_COMPLETION_FREQUENCY))
+						completion_frequency = DEFAULT_COMPLETION_FREQUENCY	
+					# Set fields to None if empty
+					assignees = row[2] if length > 2 else None
+					assignment_time = row[3] if length > 3 else None
+					completion_status = row[4] if length > 4 else None
+					chore = {
+								"name" : name,
+								"completion_frequency" : completion_frequency,
+								"assignees" : assignees,
+								"assignment_time" : assignment_time,
+								"completion_status" : completion_status
+								}
+					data_dict.append(chore)
 			except IndexError:
 				log_message("INDEX ERROR in get_data() for " + data_upper +
 				" on row %d" % (row_num + 2))
