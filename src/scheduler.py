@@ -16,6 +16,9 @@ import sheets_interface as sheets
 # For handling time
 import datetime
 
+# Randomize candidate order
+from random import shuffle
+
 # Files where information is stored
 CANDIDATES_FILE = '../bin/candidates.json'
 CHORES_FILE = '../bin/chores.json'
@@ -31,8 +34,14 @@ reassignment_time = {
 def num_assigned_chores(candidate):
 		""" Returns how many chores are currently assigned to a candidate
 		"""
-		return len(candidate['assigned_chores'].split(', ')) if \
-						not candidate['assigned_chores'] is None else 0
+		assigned_chores = candidate['assigned_chores']
+		return len(assigned_chores.split(', ')) if \
+					((not assigned_chores is None) and (assigned_chores != "")) \
+					else 0
+
+def alphabetic_key(data):
+	""" Used to sort alphabetically when uploading to sheet """
+	return data['name']
 
 class Scheduler:
 	def __init__(self):
@@ -68,7 +77,6 @@ class Scheduler:
 		Candidates tab. When everyone has recently completed a chore,
 		that chore is removed from everyone's recently completed.
 		"""
-		self.load_data()
 		for chore in self.chores:
 			# Check if enough days have passed since assignment date
 			assignment_time = chore['assignment_time']
@@ -89,18 +97,22 @@ class Scheduler:
 					sheets.log_message("ERROR in schedule_chores(): Key Error for chore %s "
 								" . Make sure Completion Frequency is valid." % chore['name'])
 					chore['completion_frequency'] = sheets.DEFAULT_COMPLETION_FREQUENCY
+			# Assign chores and save to JSON files
 			self.assign_chore(chore)
-			# Save updated information
 			self.save_data()
 
 	def assign_chore(self, chore):
+		""" Assign the given chore to a candidate
+		"""
+		# sorted() is a stable sort, so we randomize order before sorting
+		# to get different orders for candidates with same chore count
+		shuffle(self.candidates)
 		self.candidates = sorted(self.candidates, key=num_assigned_chores)
 		for candidate in self.candidates:
 			recently_completed = candidate['recently_completed'].split(', ') if \
 						not candidate['recently_completed'] is None else []
 			if chore['name'] not in recently_completed:
 				# Candidate found. Assign chore
-				# Add chore to assigned chores
 				assigned_chores = candidate['assigned_chores']
 				if assigned_chores == None or assigned_chores == "":
 					# Blank list
@@ -139,10 +151,13 @@ class Scheduler:
 
 	def save_data(self):
 		""" Save information from the scheduler to the JSON files
+		in alphabetic order by name
 		"""
 		# Save candidate info
+		self.candidates = sorted(self.candidates, key=alphabetic_key)
 		with open(CANDIDATES_FILE, 'w') as candidatesJSON:
 			json.dump(self.candidates, candidatesJSON)
+		self.chores = sorted(self.chores, key=alphabetic_key)
 		# Save chore info
 		with open(CHORES_FILE, 'w') as choresJSON:
 			json.dump(self.chores, choresJSON)
